@@ -1,5 +1,7 @@
 package main
 
-func main() {
+import "apartment/api"
 
+func main() {
+	api.Run()
 }

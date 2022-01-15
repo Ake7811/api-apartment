@@ -1,6 +1,8 @@
 package config
 
 import (
+	"apartment/api/security"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -25,7 +27,9 @@ func Load() {
 	if err != nil {
 		PORT = 7000
 	}
+	key := hex.EncodeToString([]byte(os.Getenv("KEY")))
+	decrypted := security.Decrypt(os.Getenv("DB_PASS"), key)
 
 	DBDRIVER = os.Getenv("DB_DRIVER")
-	DBURL = fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_NAME"))
+	DBURL = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True", os.Getenv("DB_USER"), decrypted, os.Getenv("DB_IP"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
 }
