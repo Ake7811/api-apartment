@@ -8,4 +8,6 @@ type UserRepository interface {
 	Create(models.User) (models.User, error)
 	Update(uint32, models.User) (int64, error)
 	Delete(uint32) (int64, error)
+
+	CheckUniqueUser(models.User) (bool, error)
 }
