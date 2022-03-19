@@ -1,31 +1,30 @@
 package controllers
 
 import (
+	"apartment/api/auth"
 	"apartment/api/database"
 	"apartment/api/models"
 	"apartment/api/repository"
 	"apartment/api/repository/crud"
 	"encoding/json"
 	"fmt"
-	"strconv"
-
-	//"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo"
 )
 
-func GetUsers(c echo.Context) error {
+func GetBuildings(c echo.Context) error {
 	db, err := database.Connect()
 	if err != nil {
 		c.Error(c.JSON(http.StatusInternalServerError, err.Error()))
 		return nil
 	}
 	defer db.Close()
-	repo := crud.NewRepositoryUsersCRUD(db)
-	func(usersReposity repository.UserRepository) {
-		users, err := usersReposity.FindAll()
+	repo := crud.NewRepositoryBuildingCRUD(db)
+	func(buildingsReposity repository.BuildingRepository) {
+		users, err := buildingsReposity.FindAll()
 		if err != nil {
 			c.Error(c.JSON(http.StatusInternalServerError, err.Error()))
 			return
@@ -35,7 +34,7 @@ func GetUsers(c echo.Context) error {
 	return nil
 }
 
-func GetUser(c echo.Context) error {
+func GetBuilding(c echo.Context) error {
 	uid, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Error(c.JSON(http.StatusBadRequest, err.Error()))
@@ -48,10 +47,10 @@ func GetUser(c echo.Context) error {
 	}
 	defer db.Close()
 
-	repo := crud.NewRepositoryUsersCRUD(db)
+	repo := crud.NewRepositoryBuildingCRUD(db)
 
-	func(usersRepository repository.UserRepository) {
-		user, err := usersRepository.FindByID(uint64(uid))
+	func(buildingsRepository repository.BuildingRepository) {
+		user, err := buildingsRepository.FindByID(uint64(uid))
 		if err != nil {
 			c.Error(c.JSON(http.StatusInternalServerError, err.Error()))
 			return
@@ -61,7 +60,7 @@ func GetUser(c echo.Context) error {
 	return nil
 }
 
-func UpdateUser(c echo.Context) error {
+func UpdateBuilding(c echo.Context) error {
 	uid, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Error(c.JSON(http.StatusBadRequest, err.Error()))
@@ -74,8 +73,8 @@ func UpdateUser(c echo.Context) error {
 		c.Error(c.JSON(http.StatusUnprocessableEntity, err.Error()))
 		return nil
 	}
-	user := models.User{}
-	err = json.Unmarshal(body, &user)
+	building := models.Building{}
+	err = json.Unmarshal(body, &building)
 	//fmt.Printf("%#v\n%v\n", user, string(body))
 	if err != nil {
 		c.Error(c.JSON(http.StatusUnprocessableEntity, err.Error()))
@@ -88,10 +87,10 @@ func UpdateUser(c echo.Context) error {
 	}
 	defer db.Close()
 
-	repo := crud.NewRepositoryUsersCRUD(db)
+	repo := crud.NewRepositoryBuildingCRUD(db)
 
-	func(usersRepository repository.UserRepository) {
-		rows, err := usersRepository.Update(uint64(uid), user)
+	func(buildingsRepository repository.BuildingRepository) {
+		rows, err := buildingsRepository.Update(uint64(uid), building)
 		if err != nil {
 			c.Error(c.JSON(http.StatusBadRequest, err.Error()))
 			return
@@ -101,22 +100,35 @@ func UpdateUser(c echo.Context) error {
 	return nil
 }
 
-func CreateUser(c echo.Context) error {
+func CreateBuilding(c echo.Context) error {
 
 	body, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
 		c.Error(c.JSON(http.StatusUnprocessableEntity, err.Error()))
 		return nil
 	}
-	user := models.User{}
-	err = json.Unmarshal(body, &user)
-	//fmt.Printf("%#v\n%v\n", user, string(body))
+	building := models.Building{}
+	err = json.Unmarshal(body, &building)
 	if err != nil {
 		c.Error(c.JSON(http.StatusUnprocessableEntity, err.Error()))
 		return nil
 	}
-	user.Prepare()
-	err = user.Validate("")
+
+	tokenAuth, err := auth.ExtractTokenMetadata(c.Request())
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, "unauthorized")
+		return nil
+	}
+
+	userId, err := auth.FetchAuth(tokenAuth)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, "unauthorized")
+		return nil
+	}
+	building.Create_by = userId
+
+	building.Prepare()
+	err = building.Validate("")
 	if err != nil {
 		c.Error(c.JSON(http.StatusUnprocessableEntity, err.Error()))
 		return nil
@@ -128,24 +140,24 @@ func CreateUser(c echo.Context) error {
 	}
 	defer db.Close()
 
-	repo := crud.NewRepositoryUsersCRUD(db)
+	repo := crud.NewRepositoryBuildingCRUD(db)
 
-	func(usersRepository repository.UserRepository) {
-		user, err := usersRepository.Create(user)
+	func(buildingsRepository repository.BuildingRepository) {
+		building, err := buildingsRepository.Create(building)
 		if err != nil {
 			c.Error(c.JSON(http.StatusInternalServerError, err.Error()))
 			return
 		}
-		c.Response().Header().Set("Location", fmt.Sprintf("%s%s/%d", c.Request().Host, c.Request().RequestURI, user.Id))
-		c.JSON(http.StatusCreated, user)
+		c.Response().Header().Set("Location", fmt.Sprintf("%s%s/%d", c.Request().Host, c.Request().RequestURI, building.Id))
+		c.JSON(http.StatusCreated, building)
 	}(repo)
 
 	return nil
 }
 
-func DeleteUser(c echo.Context) error {
+func DeleteBuilding(c echo.Context) error {
 
-	uid, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	uid, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Error(c.JSON(http.StatusBadRequest, err.Error()))
 		return nil
@@ -157,10 +169,10 @@ func DeleteUser(c echo.Context) error {
 	}
 	defer db.Close()
 
-	repo := crud.NewRepositoryUsersCRUD(db)
+	repo := crud.NewRepositoryBuildingCRUD(db)
 
-	func(usersRepository repository.UserRepository) {
-		_, err := usersRepository.Delete(uint64(uid))
+	func(buildingsRepository repository.BuildingRepository) {
+		_, err := buildingsRepository.Delete(uint64(uid))
 		if err != nil {
 			c.Error(c.JSON(http.StatusBadRequest, err.Error()))
 			return

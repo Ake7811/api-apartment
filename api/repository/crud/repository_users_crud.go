@@ -36,7 +36,7 @@ func (r *repositoryUsersCRUD) FindAll() ([]models.User, error) {
 	}
 	return nil, err
 }
-func (r *repositoryUsersCRUD) FindByID(uid uint32) (models.User, error) {
+func (r *repositoryUsersCRUD) FindByID(uid uint64) (models.User, error) {
 	var err error
 	user := models.User{}
 	done := make(chan bool)
@@ -84,7 +84,7 @@ func (r *repositoryUsersCRUD) Create(user models.User) (models.User, error) {
 	}
 	return models.User{}, err
 }
-func (r *repositoryUsersCRUD) Update(uid uint32, user models.User) (int64, error) {
+func (r *repositoryUsersCRUD) Update(uid uint64, user models.User) (int64, error) {
 	var rs *gorm.DB
 	done := make(chan bool)
 	go func(ch chan<- bool) {
@@ -109,7 +109,7 @@ func (r *repositoryUsersCRUD) Update(uid uint32, user models.User) (int64, error
 	}
 	return 0, rs.Error
 }
-func (r *repositoryUsersCRUD) Delete(uid uint32) (int64, error) {
+func (r *repositoryUsersCRUD) Delete(uid uint64) (int64, error) {
 	var rs *gorm.DB
 	done := make(chan bool)
 	go func(ch chan<- bool) {
@@ -154,5 +154,6 @@ func (r *repositoryUsersCRUD) CheckUniqueUser(checkUser models.User) (bool, erro
 		return true, errors.New("found duplicate user")
 	} else {
 		return false, nil
+
 	}
 }

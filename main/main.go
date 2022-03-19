@@ -1,6 +1,8 @@
 package main
 
-import "apartment/api"
+import (
+	"apartment/api"
+)
 
 func main() {
 	api.Run()
